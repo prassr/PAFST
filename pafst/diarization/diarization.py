@@ -4,6 +4,7 @@ from pathlib import Path
 from collections import defaultdict
 
 from pafts.datasets.dataset import Dataset
+from pafts.utils.utils import write_json
 
 from silero_vad import load_silero_vad, read_audio, get_speech_timestamps
 from pydub import AudioSegment
@@ -17,9 +18,18 @@ def generate_unique_filename(format="wav"):
     return f"temp_audio_{timestamp}_{unique_id}.{format}"
 
 
+class AudioLocator(object):
+    """Represents a "frame" of audio data."""
+    def __init__(self, path, start_time, duration):
+        self.filepath = path
+        self.start_time = start_time
+        self.duration = duration
+
+
+
 def diarization(
         dataset: Dataset,
-        hf_token,
+        hf_token=None,
 
 ):
     """
@@ -34,6 +44,8 @@ def diarization(
         new_audios (list): List of new audio path.
 
     """
+    if not hf_token:
+        hf_token=os.getenv("HF_TOKEN")
 
     pipeline = Pipeline.from_pretrained(
         "pyannote/speaker-diarization-3.1",
@@ -48,16 +60,25 @@ def diarization(
         print("Using CPU...")
 
     pipeline.to(device)
-
+    audio_locator=[]
     seg = None
     padding = AudioSegment.silent(duration=1000)
 
     for audio in dataset.audios:
+        seg_ = AudioSegment.from_file(audio)
         if not seg:
-            seg = AudioSegment.from_file(audio)
+            seg = seg_ 
         else:
-            seg += AudioSegment.from_file(audio)
+            seg += seg_
         seg += padding
+
+        audio_locator.append(
+                AudioLocator(
+                    path=str(audio),
+                    start_time=seg.duration_seconds,
+                    duration=seg_.duration_seconds
+                )
+        )
 
     temp_file_path = dataset.output_path / generate_unique_filename()
 
@@ -68,15 +89,24 @@ def diarization(
     diarization_audio = pipeline(f"{temp_file_path}")
 
     speaker_num_list = defaultdict(int)
-    new_audios = []
-
+    
+    audio_data=[]
+    l=0
     for i, (turn, _, speaker) in enumerate(diarization_audio.itertracks(yield_label=True)):
+
+        locator=audio_locator[l]
+        audio_filepath=locator.filepath
+        
         start_ms = turn.start * 1000
         end_ms = turn.end * 1000
+        
+        if not (turn.start >= locator.start_time and turn.end <= locator.start_time + locator.duration):
+            l=l+1
+            
+
 
         speaker_folder = dataset.output_path / f"speaker_{speaker}"
         speaker_folder.mkdir(parents=True, exist_ok=True)
-
         segment = seg[start_ms:end_ms]
 
         output_file_path = speaker_folder / f"{speaker}_{speaker_num_list[speaker]}.wav"
@@ -84,15 +114,19 @@ def diarization(
 
         speaker_num_list[speaker] += 1  # +1
 
-        new_audios.append(speaker_folder / f"{speaker}_{speaker_num_list[speaker]}.wav")
-
+        audio_data.append({
+                "speaker_path":str(output_file_path),
+                "audio_filepath": os.path.abspath(str(audio_filepath)),
+                "start_time": turn.start-locator.start_time,
+                "end_time": turn.end-locator.start_time
+            })
     # delete temp file
     if Path(temp_file_path).exists():
         temp_file_path.unlink()
 
-    dataset.audios = new_audios
+    write_json("diarization.json", audio_data)
 
-    return new_audios
+    return audio_data
 
 
 def vad(
@@ -104,8 +138,8 @@ def vad(
     model = load_silero_vad()
     audios = dataset.audios
     stamp = []
-    new_audios = []
-
+    audio_data = []
+    j=0
     for audio in audios:
         wav = read_audio(str(audio))
 
@@ -128,14 +162,20 @@ def vad(
             padding = AudioSegment.silent(duration=padding_duration_ms)
             segment = padding + segment + padding
 
-            file_name = audio.with_name(f'{audio.stem}_{i}{audio.suffix}')
-            file_name = file_name.name
+            # file_name = audio.with_name(f'{audio.stem}_{i}{audio.suffix}')
+            file_name = 'segment-%003d-%003d%s' % (j,i,audio.suffix,)
 
             path = (dataset.output_path / file_name).resolve()
             segment.export(path, format=audio.suffix[1:])
 
-            new_audios.append(path)
+            audio_data.append({
+                "segment_path":str(path),
+                "audio_filepath": os.path.abspath(str(audio)),
+                "start_time": start,
+                "end_time": end
+            })
+        j=j+1
 
-    dataset.audios = new_audios
 
-    return new_audios
+
+    return audio_data
