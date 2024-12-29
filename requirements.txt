@@ -1,0 +1,44 @@
+spleeter
+pydub
+SpeechRecognition
+tqdm
+#torch
+torchaudio
+
+
+
+# audio_separator
+audio-separator[gpu]
+requests >= 2
+
+librosa >=0.10
+samplerate == 0.1.0
+six >=1.16
+
+onnx>=1.14
+onnx2torch >=1.5
+onnxruntime >=1.17
+onnxruntime-gpu >=1.17
+julius >=0.2
+diffq >=0.2
+einops >=0.7
+pyyaml
+ml_collections
+resampy >=0.4
+beartype ==0.18.5
+rotary-embedding-torch ==0.6.1
+scipy ==1.13.0
+
+# denoisers
+
+denoiser ==0.1.5
+deepfilternet
+
+silero_vad
+
+
+# diarization
+pyannote.audio
+
+# STT
+openai-whisper
