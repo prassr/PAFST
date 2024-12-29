@@ -2,9 +2,11 @@ import shutil
 from pathlib import Path
 import uuid
 from datetime import datetime
+from typing import Union, Dict, List
 
 from pafst.datasets.dataset import Dataset
 from pafst.denoisers.denoiser import denoiser
+from pafst.vad.vad import vad
 from pafst.diarization.diarization import diarization
 from pafst.separator.separator import separator
 from pafst.stt.stt import STT
@@ -27,7 +29,6 @@ class PAFST:
             hf_token="HUGGINGFACE_ACCESS_TOKEN_GOES_HERE"
         )
         p.run()
-
 
         """
 
@@ -53,8 +54,12 @@ class PAFST:
         separator(self._dataset)
         return
     
-    def denoiser(self, processor="dnf3"):
-        denoiser(self._dataset)
+    def vad(self, detector="webrtc", args: Dict):
+        vad(self._dataset, detector, **args)
+        return
+
+    def denoiser(self, processor="dfn"):
+        denoiser(self._dataset, processor="dfn")
         return 
 
     def diarization(self):
