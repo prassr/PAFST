@@ -1,4 +1,5 @@
 import os
+import torch
 import torchaudio
 from denoiser import pretrained
 from denoiser.dsp import convert_audio
@@ -37,14 +38,13 @@ def load_model(processor):
     
 def denoiser(dataset: Dataset, processor="dfn"): # den for facebook
     audios = dataset.audios
-
     model, df_state, proc_fun = load_model(processor)
     data = []
-    i=0
+
     for audio in audios:
 
         in_audio_path=str(audio)
-        file_name = audio.with_name(f'{audio.stem}_{i}{audio.suffix}')
+        file_name = audio.with_name(f'{audio.stem}_{processor}{audio.suffix}')
         file_name = file_name.name
 
         out_audio_path = (dataset.output_path / file_name).resolve()
@@ -58,7 +58,7 @@ def denoiser(dataset: Dataset, processor="dfn"): # den for facebook
                 "denoised_audio_path": str(out_audio_path),
                 "audio_filepath": os.path.abspath(str(in_audio_path)),
             })
-        i=i+1
-    write_json("denoiser.json", data)
+
+    write_json((dataset.output_path/"denoiser.json").resolve(), data)
 
     return data
