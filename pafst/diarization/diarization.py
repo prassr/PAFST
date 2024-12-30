@@ -1,3 +1,4 @@
+import os
 import uuid
 from datetime import datetime
 from pathlib import Path
@@ -20,10 +21,10 @@ def generate_unique_filename(format="wav"):
 
 class AudioLocator(object):
     """Represents a "frame" of audio data."""
-    def __init__(self, path, start_time, duration):
-        self.filepath = path
-        self.start_time = start_time
-        self.duration = duration
+    def __init__(self, path:str, start_time: float, duration: float):
+        self.filepath: str = path
+        self.start_time: float = start_time
+        self.duration: float = duration
 
 
 
@@ -63,22 +64,25 @@ def diarization(
     audio_locator=[]
     seg = None
     padding = AudioSegment.silent(duration=1000)
-
     for audio in dataset.audios:
-        seg_ = AudioSegment.from_file(audio)
-        if not seg:
-            seg = seg_ 
-        else:
-            seg += seg_
-        seg += padding
+
+        seg_ = AudioSegment.from_file(str(audio))
 
         audio_locator.append(
                 AudioLocator(
                     path=str(audio),
-                    start_time=seg.duration_seconds,
+                    start_time=seg.duration_seconds if seg else 0.00,
                     duration=seg_.duration_seconds
                 )
         )
+        
+        if not seg:
+            seg = seg_
+        else:
+            seg += seg_
+        seg += padding
+
+        
 
     temp_file_path = dataset.output_path / generate_unique_filename()
 
@@ -89,19 +93,18 @@ def diarization(
     diarization_audio = pipeline(f"{temp_file_path}")
 
     speaker_num_list = defaultdict(int)
-    
     audio_data=[]
-    l=0
+    loc=0
     for i, (turn, _, speaker) in enumerate(diarization_audio.itertracks(yield_label=True)):
 
-        locator=audio_locator[l]
+        locator=audio_locator[loc]
         audio_filepath=locator.filepath
         
         start_ms = turn.start * 1000
         end_ms = turn.end * 1000
         
         if not (turn.start >= locator.start_time and turn.end <= locator.start_time + locator.duration):
-            l=l+1
+            loc=loc+1
             
 
 
@@ -117,14 +120,14 @@ def diarization(
         audio_data.append({
                 "speaker_path":str(output_file_path),
                 "audio_filepath": os.path.abspath(str(audio_filepath)),
-                "start_time": turn.start-locator.start_time,
-                "end_time": turn.end-locator.start_time
+                "start_time": round(turn.start-locator.start_time, 2),
+                "end_time": round(turn.end-locator.start_time, 2)
             })
     # delete temp file
     if Path(temp_file_path).exists():
         temp_file_path.unlink()
 
-    write_json("diarization.json", audio_data)
+    write_json(dataset.output_path / "diarization.json", audio_data)
 
     return audio_data
 
@@ -177,5 +180,5 @@ def vad(
         j=j+1
 
 
-
+    write_json(dataset.output_path / "vad.json", audio_data)
     return audio_data
