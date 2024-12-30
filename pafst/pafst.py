@@ -4,7 +4,7 @@ import uuid
 from datetime import datetime
 from typing import Union, Dict, List
 
-from pafst.datasets.dataset import Dataset
+from pafst.datasets import Dataset
 from pafst.denoisers.denoiser import denoiser
 from pafst.vad.vad import vad
 from pafst.diarization.diarization import diarization
@@ -50,28 +50,36 @@ class PAFST:
         )
 
     def separator(self):
-        separator(self._dataset)
-        return
+        audio_data=separator(self._dataset)
+        return audio_data
     
     def vad(self, detector="webrtc", params: Dict={}):
-        vad(self._dataset)
-        return
+        audio_data = []
+        if detector == "webrtc":
+            if params:
+                audio_data = vad(self._dataset, **params)
+            else:
+                audio_data = vad(self._dataset)
+        elif detector == "silero_vad":
+            pass
+
+        return audio_data
 
     def denoiser(self, processor="dfn"):
-        denoiser(self._dataset, processor=processor)
-        return 
+        audio_data = denoiser(self._dataset, processor=processor)
+        return audio_data
 
-    def diarization(self):
-        # if not self._hf_token:
-        #     raise TypeError("[!] Hugging Face access token is required to use diarization model.")
+    def diarization(self, hf_token=None):
+        
+        if hf_token:
+            self._hf_token = hf_token
 
-        diarization(self._dataset, self._hf_token)
-
-        return
+        audio_data = diarization(self._dataset, self._hf_token)
+        return audio_data
 
     def stt(self, output_format='json', model_size='large'):
-        STT(self._dataset, output_format=output_format, model_size=model_size)
-        return
+        audio_data = STT(self._dataset, output_format=output_format, model_size=model_size)
+        return audio_data
 
     def _stage_process(self, process_function, *args, **kwargs):
         # Create unique temp directory
