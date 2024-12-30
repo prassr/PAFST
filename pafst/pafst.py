@@ -5,10 +5,10 @@ from datetime import datetime
 from typing import Union, Dict, List
 
 from pafst.datasets import Dataset
-from pafst.denoisers.denoiser import denoiser
-from pafst.vad.vad import vad
-from pafst.diarization.diarization import diarization
-from pafst.separator.separator import separator
+from pafst.denoisers import denoiser
+from pafst.vad import vad
+from pafst.diarization import diarization
+from pafst.separator import separator
 from pafst.stt.stt import STT
 
 class PAFST:
