@@ -2,6 +2,8 @@ from pathlib import Path
 
 from tqdm import tqdm
 
+from pafst.utils import write_json
+
 from pafst.datasets.dataset import Dataset
 from audio_separator.separator.separator import Separator
 
@@ -13,7 +15,7 @@ def separator(
     separator.load_model()
 
     audios = dataset.audios
-    new_audios = []
+    audio_data = []
 
     bar = tqdm(audios,
                total=len(audios),
@@ -32,8 +34,11 @@ def separator(
             target_path.unlink()
         Path(Path(dataset.output_path) / Path(output_files[1])).rename(target_path)
 
-        new_audios.append(Path(dataset.output_path) / Path(audio.name))
+        audio_data.append({
+                "separator_path":str(target_path),
+                "audio_filepath": str(audio)
+            })
 
-    dataset.audios = new_audios
+    write_json(dataset.output_path/"separator.json", audio_data)
 
-    return new_audios
+    return audio_data
