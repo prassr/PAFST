@@ -1,3 +1,4 @@
+import os
 import torchaudio
 from denoiser import pretrained
 from denoiser.dsp import convert_audio
@@ -11,8 +12,8 @@ import soundfile as sf
 
 def dfn3_denoise(in_audio_path, out_audio_path, model, df_state):
     audio, _ = load_audio(in_audio_path, sr=df_state.sr())
-    enhanced = enhance(model, df_state, audio).detach().cpu().numpy()
-    save_audio(out_audio_path, enhanced.detach().cpu().numpy(), 16000)
+    enhanced = enhance(model, df_state, audio).cpu().numpy()
+    save_audio(out_audio_path, enhanced, df_state.sr())
     # return enhanced, df_state.sr()
 
 def fb_denoise(in_audio_path, out_audio_path, model):
@@ -39,6 +40,7 @@ def denoiser(dataset: Dataset, processor="dfn"): # den for facebook
 
     model, df_state, proc_fun = load_model(processor)
     data = []
+    i=0
     for audio in audios:
 
         in_audio_path=str(audio)
@@ -53,10 +55,10 @@ def denoiser(dataset: Dataset, processor="dfn"): # den for facebook
             proc_fun(in_audio_path, out_audio_path, model)
         
         data.append({
-                "denoised_audio_path": str(path),
-                "audio_filepath": os.path.abspath(str(audio_path)),
+                "denoised_audio_path": str(out_audio_path),
+                "audio_filepath": os.path.abspath(str(in_audio_path)),
             })
-
+        i=i+1
     write_json("denoiser.json", data)
 
     return data
