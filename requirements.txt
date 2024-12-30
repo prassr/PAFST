@@ -35,7 +35,7 @@ denoiser ==0.1.5
 deepfilternet
 
 silero_vad
-
+webrtcvad
 
 # diarization
 pyannote.audio
