@@ -1,5 +1,7 @@
 .idea/
 
+*/__pycache__
+*/*/__pycache__
 
 # key file
 key.json
