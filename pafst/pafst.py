@@ -62,8 +62,8 @@ class PAFST:
         return 
 
     def diarization(self):
-        if not self._hf_token:
-            raise TypeError("[!] Hugging Face access token is required to use diarization model.")
+        # if not self._hf_token:
+        #     raise TypeError("[!] Hugging Face access token is required to use diarization model.")
 
         diarization(self._dataset, self._hf_token)
 
