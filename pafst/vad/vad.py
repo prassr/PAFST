@@ -12,6 +12,7 @@ import contextlib
 from pathlib import Path
 from tqdm import tqdm
 
+from pafst.utils import write_json
 from pafst.datasets.dataset import Dataset
 
 def read_wave(path):
@@ -39,10 +40,6 @@ def write_wave(path, audio, sample_rate):
         wf.setsampwidth(2)
         wf.setframerate(sample_rate)
         wf.writeframes(audio)
-
-def write_json(path, data):
-    with open(path, "w") as f:
-        json.dump(data, f)
 
 class Frame(object):
     """Represents a "frame" of audio data."""
@@ -154,18 +151,19 @@ def vad_collector(sample_rate, frame_duration_ms,
 
 
 
-def vad(dataset: Dataset, aggressiveness=0, 
-        frame_duration_ms=10, padding_duration_ms=300):
-
+def vad(dataset: Dataset, mode=0, 
+        frame_duration=10, padding_duration=300):
     """
-    
+    mode: 0-3
+    frame_duration: 10 or 20 or 30 # accepted duration in ms
+    padding_duration: in milliseconds
     """
     
     audios = dataset.audios
 
-    data=[]
+    audio_data=[]
 
-    vad_model = webrtcvad.Vad(aggressiveness)
+    vad_model = webrtcvad.Vad(mode)
 
     bar = tqdm(audios,
                total=len(audios),
@@ -175,24 +173,25 @@ def vad(dataset: Dataset, aggressiveness=0,
     j=0
     for audio_path in bar:
         audio, sample_rate = read_wave(str(audio_path))
-        frames = frame_generator(frame_duration_ms, audio, sample_rate)
+        frames = frame_generator(frame_duration, audio, sample_rate)
         frames = list(frames)
-        segments = vad_collector(sample_rate, frame_duration_ms, padding_duration_ms, vad_model, frames)
+        segments = vad_collector(sample_rate, frame_duration, padding_duration, vad_model, frames)
     
         for i, (audio, ts) in enumerate(segments):
             path = 'segment-%003d-%003d.wav' % (j,i,)
             path = (Path(dataset.output_path) / Path(path)).resolve()
-            data.append({
+            audio_data.append({
                 "segment_path":str(path), 
                 "audio_filepath": os.path.abspath(str(audio_path)), 
                 "start_time": ts["start_time"], 
                 "end_time": ts["end_time"]
             })
-            write_wave(path, audio, sample_rate)
+            write_wave(str(path), audio, sample_rate)
         j=j+1
-    json_path = "vad.json"
-    write_json(json_path, data)
-    return data
+    json_path = dataset.output_path / "vad.json"
+    write_json(json_path, audio_data)
+    return audio_data
+
 
 
 
