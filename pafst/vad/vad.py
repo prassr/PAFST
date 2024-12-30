@@ -13,7 +13,7 @@ from pathlib import Path
 from tqdm import tqdm
 
 from pafst.utils import write_json
-from pafst.datasets.dataset import Dataset
+from pafst.datasets import Dataset
 
 def read_wave(path):
     """Reads a .wav file.

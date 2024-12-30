@@ -4,7 +4,7 @@ from tqdm import tqdm
 
 from pafst.utils import write_json
 
-from pafst.datasets.dataset import Dataset
+from pafst.datasets import Dataset
 from audio_separator.separator.separator import Separator
 
 

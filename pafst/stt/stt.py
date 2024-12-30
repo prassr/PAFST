@@ -6,7 +6,7 @@ import whisper
 from whisper.tokenizer import LANGUAGES
 from tqdm import tqdm
 
-from pafst.datasets.dataset import Dataset
+from pafst.datasets import Dataset
 
 whisper_model = {key: None for key in whisper._MODELS}
 

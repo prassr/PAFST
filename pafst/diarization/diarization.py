@@ -4,7 +4,7 @@ from datetime import datetime
 from pathlib import Path
 from collections import defaultdict
 
-from pafst.datasets.dataset import Dataset
+from pafst.datasets import Dataset
 from pafst.utils import write_json
 
 from silero_vad import load_silero_vad, read_audio, get_speech_timestamps

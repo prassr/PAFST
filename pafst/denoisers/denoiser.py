@@ -4,7 +4,7 @@ import torchaudio
 from denoiser import pretrained
 from denoiser.dsp import convert_audio
 
-from pafst.datasets.dataset import Dataset
+from pafst.datasets import Dataset
 from pafst.utils import write_json
 
 from df.enhance import enhance, init_df, load_audio, save_audio
