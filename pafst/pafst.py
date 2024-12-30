@@ -11,7 +11,6 @@ from pafst.diarization.diarization import diarization
 from pafst.separator.separator import separator
 from pafst.stt.stt import STT
 
-
 class PAFST:
     """
         Make audio files into a dataset for TTS/STT.
@@ -42,7 +41,7 @@ class PAFST:
     ):
 
         self._hf_token = hf_token
-
+       
         self._dataset = Dataset(
             path=path,
             dataset_name=dataset_name,
@@ -54,15 +53,12 @@ class PAFST:
         separator(self._dataset)
         return
     
-    def vad(self, detector="webrtc", args: Dict={}):
-        if args == {}:
-            vad(self._dataset, detector)
-        else:
-            vad(self._dataset, detector, **args)
+    def vad(self, detector="webrtc", params: Dict={}):
+        vad(self._dataset)
         return
 
     def denoiser(self, processor="dfn"):
-        denoiser(self._dataset, processor="dfn")
+        denoiser(self._dataset, processor=processor)
         return 
 
     def diarization(self):
