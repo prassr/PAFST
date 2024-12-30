@@ -5,7 +5,7 @@ from pathlib import Path
 from collections import defaultdict
 
 from pafst.datasets.dataset import Dataset
-from pafst.utils.utils import write_json
+from pafst.utils import write_json
 
 from silero_vad import load_silero_vad, read_audio, get_speech_timestamps
 from pydub import AudioSegment

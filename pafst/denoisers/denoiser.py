@@ -5,7 +5,7 @@ from denoiser import pretrained
 from denoiser.dsp import convert_audio
 
 from pafst.datasets.dataset import Dataset
-from pafst.utils.utils import write_json
+from pafst.utils import write_json
 
 from df.enhance import enhance, init_df, load_audio, save_audio
 from df.utils import download_file
