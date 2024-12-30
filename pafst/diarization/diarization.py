@@ -3,8 +3,8 @@ from datetime import datetime
 from pathlib import Path
 from collections import defaultdict
 
-from pafts.datasets.dataset import Dataset
-from pafts.utils.utils import write_json
+from pafst.datasets.dataset import Dataset
+rom pafst.utils.utils import write_json
 
 from silero_vad import load_silero_vad, read_audio, get_speech_timestamps
 from pydub import AudioSegment

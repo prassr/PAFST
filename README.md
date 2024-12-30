@@ -1,4 +1,4 @@
-# PAFTS
+# PAFST
 
 
 ---
@@ -8,7 +8,7 @@ This library enables easy processing of audio files into a format suitable for T
 ![architecture](architecture.png)
 
 ## Description 
-PAFTS have three features.
+PAFST have three features.
 
 1. Separator
 2. Diarization
@@ -106,9 +106,9 @@ To enable diarization functionality, please complete the following steps
 3. Create access token at [`hf.co/settings/tokens`](https://huggingface.co/login?next=%2Fsettings%2Ftokens).
 
 ```
-from pafts.pafts import PAFTS
+from pafst.pafts import PAFST
 
-p = PAFTS(
+p = PAFST(
     path = 'your_audio_directory_path',
     output_path = 'output_path',
     hf_token="HUGGINGFACE_ACCESS_TOKEN_GOES_HERE"
@@ -118,15 +118,15 @@ p = PAFTS(
 
 After completing the setup steps above, you can install this library by running
 ```
-pip install pafts
+pip install pafst
 ```
 
 
 ## Usage
 ```
-from pafts import PAFTS
+from pafst import PAFST
 
-p = PAFTS(
+p = PAFST(
     path = 'your_audio_directory_path',
     output_path = 'output_path',
     hf_token="HUGGINGFACE_ACCESS_TOKEN_GOES_HERE" # if you use diarization
@@ -140,7 +140,7 @@ p.separator()
 p.diarization()
 
 # STT
-p.STT(model_size='small')
+p.stt(model_size='small')
 
 # One-Click Process
 p.run()
@@ -156,7 +156,7 @@ p.run()
 
 ## License
 
-The code of **PAFTS** is [MIT-licensed](LICENSE)
+The code of **PAFST** is [MIT-licensed](LICENSE)
 
 
 

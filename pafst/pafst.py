@@ -54,8 +54,11 @@ class PAFST:
         separator(self._dataset)
         return
     
-    def vad(self, detector="webrtc", args: Dict):
-        vad(self._dataset, detector, **args)
+    def vad(self, detector="webrtc", args: Dict={}):
+        if args == {}:
+            vad(self._dataset, detector)
+        else:
+            vad(self._dataset, detector, **args)
         return
 
     def denoiser(self, processor="dfn"):

@@ -2,7 +2,7 @@ from pathlib import Path
 
 from tqdm import tqdm
 
-from pafts.datasets.dataset import Dataset
+from pafst.datasets.dataset import Dataset
 from audio_separator.separator.separator import Separator
 
 

@@ -32,7 +32,7 @@ class Dataset:
         path (str): Directory path with audio files.
         dataset_name (str, optional): Dataset name. Defaults to dataset_path's directory name.
         language (str, optional): Language using BCP 47 language tag. Defaults to 'en-us' (English)
-        output_path (str): Output Directory. Defaults to './pafts_output'
+        output_path (str): Output Directory. Defaults to './pafst_output'
 
     """
 
@@ -41,7 +41,7 @@ class Dataset:
             path: str = None,
             dataset_name: str = None,
             language: str = None,
-            output_path: str = 'pafts_output'
+            output_path: str = 'pafst_output'
     ):
 
         self._path = Path(path).resolve()

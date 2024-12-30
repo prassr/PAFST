@@ -1,2 +1,2 @@
-from pafts.pafts import PAFTS
+from pafst.pafst import PAFST
 
