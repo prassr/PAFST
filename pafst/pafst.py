@@ -9,7 +9,7 @@ from pafst.denoisers import denoiser
 from pafst.vad import vad
 from pafst.diarization import diarization
 from pafst.separator import separator
-from pafst.stt.stt import STT
+from pafst.stt import STT
 
 class PAFST:
     """
@@ -40,7 +40,8 @@ class PAFST:
             hf_token: str = None
     ):
 
-        self._hf_token = hf_token
+        self._hf_token=hf_token
+        self.language=language
        
         self._dataset = Dataset(
             path=path,
@@ -48,12 +49,29 @@ class PAFST:
             language=language,
             output_path=output_path
         )
-
+        
     def separator(self):
+        """
+        input: 
+            None, uses roformer to separate audio source from music source
+        output: 
+            List[Dict]]: This list contains the origianl file path and the processed audio path
+        """
         audio_data=separator(self._dataset)
         return audio_data
     
     def vad(self, detector="webrtc", params: Dict={}):
+        """
+        input: 
+            detector: "webrtc" (Optional) # uses "webrtcvad"
+            params: {
+                mode: 0-3 # aggressiveness, 0-mild, 3-very aggressive
+                frame_duration: 10 or 20 or 30 # accepted duration in ms
+                padding_duration: in milliseconds
+            } (Optional)
+        output: 
+            List[Dict]]: This list contains the origianl file path and the processed audio path with vad timestamps
+        """
         audio_data = []
         if detector == "webrtc":
             if params:
@@ -66,19 +84,45 @@ class PAFST:
         return audio_data
 
     def denoiser(self, processor="dfn"):
+        """
+        input: 
+            processor: "dfn" (Optional)
+                "dfn" is DeepFilterNet3, use "den" for facebook denoiser
+        output: 
+            List[Dict]]: This list contains the origianl file path and the processed audio path
+        """
         audio_data = denoiser(self._dataset, processor=processor)
         return audio_data
 
     def diarization(self, hf_token=None):
-        
+        """
+        input: 
+            hf_token (Optional)
+        output: 
+            List[Dict]]: This list contains the origianl file path and the processed audio path
+        """
         if hf_token:
             self._hf_token = hf_token
 
         audio_data = diarization(self._dataset, self._hf_token)
         return audio_data
 
-    def stt(self, output_format='json', model_size='large'):
-        audio_data = STT(self._dataset, output_format=output_format, model_size=model_size)
+    def stt(self, model_size='large-v3', vad=True, language="en", compute_type="float32"):
+        """
+        Uses faster_whisper.
+        input:
+            model_size = "large-v3" # 
+            vad=True # performs Voice Activity Detection
+            language="en"
+            compute_type="float32" # the quantization size. float32 is no quantization at all
+        output:
+            List[Dict]]: This list contains the origianl file path and the processed audio path
+        """
+        if self.language:
+            language=self.language
+
+        audio_data = STT(self._dataset, model_size=model_size, 
+                         vad=vad, language=language, compute_type=compute_type)
         return audio_data
 
     def _stage_process(self, process_function, *args, **kwargs):
@@ -97,6 +141,19 @@ class PAFST:
         return temp_dir
 
     def run(self):
+        """
+        Perform separation, diarization and stt in one go.
+        """
+
+        # if not processor_functions:
+        #     processor_functions = ["separator", "diarization", "stt"]
+        # functions = {
+        #     "separator": separator,
+        #     "vad": vad,
+        #     "denoiser": denoiser,
+        #     "diarization": diarization,
+        #     "stt": STT
+        # }
         original_output = self._dataset.output_path
 
         # Stage 1: separator
