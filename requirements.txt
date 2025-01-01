@@ -2,10 +2,9 @@ spleeter
 pydub
 SpeechRecognition
 tqdm
+
 #torch
 torchaudio
-
-
 
 # audio_separator
 audio-separator[gpu]
@@ -42,3 +41,4 @@ pyannote.audio
 
 # STT
 openai-whisper
+faster-whisper==1.1.0
