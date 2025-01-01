@@ -44,13 +44,9 @@ def whisper_stt(
     if not whisper_model[model_size]:
         whisper_model[model_size] = whisper.load_model(model_size)
 
-    if language and language not in LANGUAGES:
-            raise ValueError(
-            f"[!] This language is not supported. Please select one of the language codes below\n{LANGUAGES}")
-
     result = whisper_model[model_size].transcribe(str(audio))
 
-    return result['text']
+    return result
 
 def process_segments(raw_segments):
     segments = []
@@ -64,7 +60,6 @@ def process_segments(raw_segments):
         text+=chunk["text"]+" "
 
     return segments, text
-
 
 def segment_audio(audio_file, segments, output_path):
     """
@@ -99,7 +94,8 @@ def STT(
         model_size='tiny',
         vad=True,
         language=None,
-        compute_type="int8"
+        compute_type="int8",
+        faster=False
         
 ):
     """
@@ -111,9 +107,11 @@ def STT(
         output_format (str): Output format, Defaults is json (json or txt)
         model_size (str): Size of the whisper model.
         language (str): Language of the audio file to run STT.
-
+        vad (bool) = True: Performs vad, saves the audio files on timestamps detected by vad.
+        compute_type (str) = "int8": Loads the model in "int8" quantization
+        faster (bool) = False: if True uses faster whisper
     Returns:
-        Dict: List of the text values of audio files in the dataset.
+        List[Dict]: List of the dictionary containing audio files and processed files, language detected by whisper and timestamps if vad set to True.
 
     """
 
@@ -126,12 +124,13 @@ def STT(
 
     output_path = dataset.output_path
 
-    model=WhisperModel(model_size, compute_type=compute_type)
-    if language:
-        options = dict(language=language, beam_size=5, best_of=5)
-    else:
-        options = dict(beam_size=5, best_of=5)
-    transcribe_options=dict(task="transcribe", **options)
+    if faster:
+        model=WhisperModel(model_size, compute_type=compute_type)
+        if language:
+            options = dict(language=language, beam_size=5, best_of=5)
+        else:
+            options = dict(beam_size=5, best_of=5)
+        transcribe_options=dict(task="transcribe", **options)
     
     audio_data=[]
     audio_main=[]
@@ -140,13 +139,17 @@ def STT(
                leave=True,
                )
     for audio in bar:
-        raw_segments, info=model.transcribe(str(audio), **transcribe_options)
-
-        segments, text=process_segments(raw_segments)
+        if faster:
+            raw_segments, info=model.transcribe(str(audio), **transcribe_options)
+            segments, text=process_segments(raw_segments)
+            language=info.language
+        else:
+            result=whisper_stt(audio, model_size)
+            segments, text, language = result["segments"], result['text'], result["language"]
         audio_main.append({
             "asr_text": text,
             "audio_filepath": str(audio),
-            "language": language if language else info.language
+            "language": language
         })
 
         if vad:
@@ -158,5 +161,4 @@ def STT(
         write_json(output_path/"whisper_vad.json", audio_data)
         return audio_data
     return audio_main
-    
     
