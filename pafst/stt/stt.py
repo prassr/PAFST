@@ -1,15 +1,22 @@
+import os
 import json
 from pathlib import Path
-from collections import defaultdict
-
-import whisper
-from whisper.tokenizer import LANGUAGES
 from tqdm import tqdm
 
+from collections import defaultdict
+
+import librosa
+import whisper
+from faster_whisper import WhisperModel
+from whisper.tokenizer import LANGUAGES
+
+from pydub import AudioSegment
+
+from pafst.utils import write_json
 from pafst.datasets import Dataset
 
-whisper_model = {key: None for key in whisper._MODELS}
 
+whisper_model = {key: None for key in whisper._MODELS}
 
 def whisper_stt(
         audio: Path,
@@ -37,23 +44,63 @@ def whisper_stt(
     if not whisper_model[model_size]:
         whisper_model[model_size] = whisper.load_model(model_size)
 
-    if language: 
-        if language not in LANGUAGES:
+    if language and language not in LANGUAGES:
             raise ValueError(
             f"[!] This language is not supported. Please select one of the language codes below\n{LANGUAGES}")
 
-        result = whisper_model[model_size].transcribe(str(audio), language=language)
-    else:
-        result = whisper_model[model_size].transcribe(str(audio))
+    result = whisper_model[model_size].transcribe(str(audio))
 
     return result['text']
+
+def process_segments(raw_segments):
+    segments = []
+    text=""
+    for segment_chunk in raw_segments:
+        chunk={}
+        chunk["start"]=segment_chunk.start
+        chunk["end"]=segment_chunk.end
+        chunk["text"]=segment_chunk.text
+        segments.append(chunk)
+        text+=chunk["text"]+" "
+
+    return segments, text
+
+
+def segment_audio(audio_file, segments, output_path):
+    """
+    segments audio given a list of dict containing start time, end time
+    """
+    audio_data = []
+    audio = AudioSegment.from_file(str(audio_file))
+    
+    for i, chunk in enumerate(segments):
+        path = 'segment-%002d.wav' % (i,)
+        path = (Path(output_path) / Path(path)).resolve()
+
+        start_time_ms = chunk["start"] * 1000  #  in milliseconds
+        end_time_ms = chunk["end"] * 1000  # in milliseconds
+        segment = audio[start_time_ms:end_time_ms]
+
+        segment.export(path, format="wav") 
+
+        audio_data.append({
+            "segment_path":str(path), 
+            "audio_filepath": os.path.abspath(str(audio_file)),
+            "start_time": chunk["start"], 
+            "end_time": chunk["end"] ,
+            "text": chunk["text"]
+        })
+
+    return audio_data
 
 
 def STT(
         dataset: Dataset,
-        output_format='json',
-        model_size='base',
-        language=None
+        model_size='tiny',
+        vad=True,
+        language=None,
+        compute_type="int8"
+        
 ):
     """
     Read the audio files in the dataset, and use the stt function to extract text.
@@ -66,33 +113,50 @@ def STT(
         language (str): Language of the audio file to run STT.
 
     Returns:
-        Dict: Dictionary of the text values of audio files in the dataset.
+        Dict: List of the text values of audio files in the dataset.
 
     """
+
+    if language and language not in LANGUAGES:
+            raise ValueError(
+            f"[!] This language is not supported. Please select one of the language codes below\n{LANGUAGES}")
+
     audios = dataset.audios
     stt_dict = defaultdict(dict)
 
     output_path = dataset.output_path
 
+    model=WhisperModel(model_size, compute_type=compute_type)
+    if language:
+        options = dict(language=language, beam_size=5, best_of=5)
+    else:
+        options = dict(beam_size=5, best_of=5)
+    transcribe_options=dict(task="transcribe", **options)
+    
+    audio_data=[]
+    audio_main=[]
     bar = tqdm(audios,
                total=len(audios),
                leave=True,
                )
-
     for audio in bar:
-        text = whisper_stt(audio, model_size, language)
-        stt_dict[audio.parent.name][audio.name] = text
+        raw_segments, info=model.transcribe(str(audio), **transcribe_options)
 
-    for speaker in stt_dict:
-        if output_format == 'json':
-            with open(Path(output_path) / Path(f'{speaker}.json'), 'w', encoding='UTF8') as f:
-                json.dump(stt_dict[speaker], f, indent=4, ensure_ascii=False)
-        elif output_format == 'txt':
-            with open(Path(output_path) / Path(f'{speaker}.txt'), 'w', encoding='UTF8') as f:
-                for k, v in stt_dict[speaker]:
-                    f.write(f'{k}|{v}\n')
-        else:
-            raise ValueError(
-                f"[!] Please choose one of the following format: json, txt.")
+        segments, text=process_segments(raw_segments)
+        audio_main.append({
+            "asr_text": text,
+            "audio_filepath": str(audio),
+            "language": language if language else info.language
+        })
 
-    return stt_dict
+        if vad:
+            a_data = segment_audio(audio, segments, output_path)
+            audio_data.extend(a_data)
+
+    write_json(output_path/"asr.json", audio_main)
+    if vad:
+        write_json(output_path/"whisper_vad.json", audio_data)
+        return audio_data
+    return audio_main
+    
+    
