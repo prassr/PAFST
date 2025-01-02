@@ -1,3 +1,4 @@
+
 import os
 import json
 from pathlib import Path
@@ -69,7 +70,7 @@ def segment_audio(audio_file, segments, output_path):
     audio = AudioSegment.from_file(str(audio_file))
     
     for i, chunk in enumerate(segments):
-        path = 'segment-%002d.wav' % (i,)
+        path = 'segment_%002d.wav' % (str(audio_file),i,)
         path = (Path(output_path) / Path(path)).resolve()
 
         start_time_ms = chunk["start"] * 1000  #  in milliseconds
