@@ -10,11 +10,13 @@ This library enables easy processing of audio files into a format suitable for T
 ## Description 
 PAFST have three features.
 
-1. Separator
-2. Diarization
-3. STT
+1. Separator and Denoiser
+2. VAD
+3. Diarization
+4. STT
 
-* Separator : Removes background music (MR) and noise from each audio file to isolate clean voice tracks.
+* Separator or Denoiser : Removes background music (MR) and noise from each audio file to isolate clean voice tracks.
+* VAD : Detects whether the audio is present or absent.
 * Diarization : Separates speakers within each audio file, identifying distinct voices.
 * STT : Extract text from audio.
 
@@ -25,11 +27,9 @@ PAFST have three features.
 # before run()
 
       path
-        ├── 1_001.wav # have mr or noise
-        ├── 1_002.wav
-        ├── 1_003.wav
-        ├── 1_004.wav
-        └── abc.wav
+        ├── TEST-1.wav # have mr or noise
+        └── TEST-2.wav
+        
 
 
 # after run()
@@ -45,29 +45,42 @@ PAFST have three features.
         ├── SPEAKER_02
         │   ├── SPEAKER_02_1.wav
         │   └── SPEAKER_02_2.wav
-        └── audio.json
+        └── diarization.json
         
-        # audio.json
-        {
-              'SPEAKER_00_1.wav' : "I have a note.", 
-              'SPEAKER_00_2.wav' : "I want to eat chicken.",
-              'SPEAKER_00_3.wav' : "...",
-              'SPEAKER_01_1.wav' : "...",
-              'SPEAKER_01_2.wav' : "...",   
-        }
+        # diarization.json
+        [
+              {
+                "speaker_path": "/processed_audio/speaker_SPEAKER_00/SPEAKER_00_0.wav",
+                "audio_filepath": "processed_audio//TEST-1.wav", # this is audio separated
+                "start_time": 0.03,
+                "end_time": 3.81
+              },
+            ...
+      ]
+
+      # asr.json
+      [
+            {
+              "asr_text": " Let's talk about music. I often do you listen to music.",
+              "audio_filepath": "/processed_audio/speaker_SPEAKER_00/SPEAKER_00_0.wav",
+              "language": "en"
+            } 
+      ]
 ```
 
 
 ## Features
 * Separator : Using the [UVR](https://github.com/Anjok07/ultimatevocalremovergui) project’s model and code for music source separation.
+* Denoiser : DFNet3 and Facebook's ` denoiser `
+* VAD : Using [webrtcvad](https://github.com/wiseman/py-webrtcvad)
 * Diarization : Using speaker diarization from [pyannote-audio](https://github.com/pyannote/pyannote-audio)
-* STT : Using STT model whisper from [OpenAI](https://github.com/openai/whisper)
+* STT : Using STT model whisper from [OpenAI](https://github.com/openai/whisper) and ` faster-whisper `
 
 
 ## Setup
 This library was developed using Python 3.10, and we recommend using Python versions 3.8 to 3.10 for compatibility.
 
-While the library is compatible with both Linux and Windows, all testing was conducted on Windows. 
+While the library is compatible with both Linux and Windows, all testing was conducted on Linux. 
 For any issues or errors encountered while running on Linux, please feel free to open an issue.
 
 Before running the library, please ensure the following are installed:
@@ -134,7 +147,11 @@ p = PAFST(
 )
 
 # Separator
-p.separator()
+p.separator() # or
+
+p.denoiser(processor="dfn") # use "den" for facebook's denoiser
+
+p.vad() # voice-activity-detection using webrtcvad
 
 # Diarization
 p.diarization()
@@ -151,13 +168,12 @@ p.run()
 - [ ] Command line
 - [ ] Clean logging
 - [ ] Separator with Model Selection
-- [ ] Update README.md
-- [ ] Add VAD
+
+References:
+
+* [PAFTS](https://github.com/harmlessman/PAFTS) for base code
+* [Paper](https://arxiv.org/pdf/2409.05356) for DFNet3 use case
 
 ## License
 
 The code of **PAFST** is [MIT-licensed](LICENSE)
-
-
-
-
