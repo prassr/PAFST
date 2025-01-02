@@ -1,3 +1,4 @@
+
 .idea/
 
 .ipynb_checkpoints/
@@ -22,7 +23,7 @@ pretrained_models
 
 dist
 build
-pafts.egg-info
+pafst.egg-info
 
 
 *.wav
