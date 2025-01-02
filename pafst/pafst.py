@@ -1,9 +1,9 @@
+
 import shutil
 from pathlib import Path
-import uuid
-from datetime import datetime
 from typing import Union, Dict, List
 
+from pafst.utils import mk_temp_dir, mod_json
 from pafst.datasets import Dataset
 from pafst.denoisers import denoiser
 from pafst.vad import vad
@@ -125,20 +125,11 @@ class PAFST:
                          vad=vad, language=language, compute_type=compute_type)
         return audio_data
 
+    
     def _stage_process(self, process_function, *args, **kwargs):
         # Create unique temp directory
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        unique_id = uuid.uuid4().hex
-        temp_dir = Path.cwd() / f"temp_dir_{timestamp}_{unique_id}"
-        temp_dir.mkdir(exist_ok=True)
-
-        self._dataset.output_path = temp_dir
         process_function(self._dataset, *args, **kwargs)
-
-        # Update dataset path
-        self._dataset.path = temp_dir
-
-        return temp_dir
+        return
 
     def run(self):
         """
@@ -154,27 +145,48 @@ class PAFST:
         #     "diarization": diarization,
         #     "stt": STT
         # }
+        
         original_output = self._dataset.output_path
-
+        original_path = self._dataset.path
+        
         # Stage 1: separator
-        temp_dir1 = self._stage_process(separator)
+        temp_dir1 = mk_temp_dir()
+        self._dataset.output_path = temp_dir1
+        self._stage_process(separator)
+        self._dataset.path = temp_dir1
 
         # Stage 2: diarization
-        temp_dir2 = self._stage_process(diarization, hf_token=self._hf_token)
-
-        # Stage 3: STT
-        temp_dir3 = self._stage_process(STT)
+        temp_dir2 = mk_temp_dir()
+        self._dataset.output_path = temp_dir2
+        self._stage_process(diarization, hf_token=self._hf_token)
 
         original_output.mkdir(exist_ok=True)
 
-        for temp_dir in [temp_dir2, temp_dir3]:
+        for file in temp_dir1.rglob('*'):
+            if file.suffix[1:] in ['wav','mp3','ogg','flac']:
+                relative_path = file.relative_to(temp_dir1)
+                destination = original_output / relative_path
+                destination.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy(file, destination)
+                
+        
+        for temp_dir in [temp_dir2]:
             for file in temp_dir.rglob('*'):
                 if file.is_file():
                     relative_path = file.relative_to(temp_dir)
                     destination = original_output / relative_path
                     destination.parent.mkdir(parents=True, exist_ok=True)
                     shutil.copy(file, destination)
+        
+        # Stage 3: STT
 
+        self._dataset.path = original_output
+        self._dataset.output_path=original_output
+        self._stage_process(STT, vad=False)
+
+        dia_json_path = original_output / "diarization.json"
+        mod_json(dia_json_path, original_output)
+        
         # Cleanup
-        for temp_dir in [temp_dir1, temp_dir2, temp_dir3]:
+        for temp_dir in [temp_dir1, temp_dir2]:
             shutil.rmtree(temp_dir, ignore_errors=True)
