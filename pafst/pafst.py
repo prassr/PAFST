@@ -161,14 +161,6 @@ class PAFST:
         self._stage_process(diarization, hf_token=self._hf_token)
 
         original_output.mkdir(exist_ok=True)
-
-        for file in temp_dir1.rglob('*'):
-            if file.suffix[1:] in ['wav','mp3','ogg','flac']:
-                relative_path = file.relative_to(temp_dir1)
-                destination = original_output / relative_path
-                destination.parent.mkdir(parents=True, exist_ok=True)
-                shutil.copy(file, destination)
-                
         
         for temp_dir in [temp_dir2]:
             for file in temp_dir.rglob('*'):
