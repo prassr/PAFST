@@ -35,16 +35,17 @@ PAFST have three features.
 # after run()
     
        path
-        ├── SPEAKER_00
+        ├── speaker_SPEAKER_00
         │   ├── SPEAKER_00_1.wav # removed mr and noise
         │   ├── SPEAKER_00_2.wav
         │   └── SPEAKER_00_3.wav
-        ├── SPEAKER_01
+        ├── speaker_SPEAKER_01
         │   ├── SPEAKER_01_1.wav
         │   └── SPEAKER_01_2.wav
-        ├── SPEAKER_02
+        ├── speaker_SPEAKER_02
         │   ├── SPEAKER_02_1.wav
         │   └── SPEAKER_02_2.wav
+        ├── asr.json
         └── diarization.json
         
         # diarization.json
