@@ -8,7 +8,7 @@ with open("requirements.txt", 'r', encoding='utf-8') as f:
 
 setup(
     name='pafst',
-    version='1.0',
+    version='1.0.0',
     author='ashtavakra',
     author_email="vidyaaltar@gmail.com",
     description='Library That Preprocessing Audio For TTS/STT.',
